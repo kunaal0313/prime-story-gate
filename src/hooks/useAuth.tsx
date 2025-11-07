@@ -8,7 +8,9 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  username: string | null;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   checkAdminStatus: () => Promise<boolean>;
 }
@@ -20,6 +22,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
+
+  const fetchUsername = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    setUsername(data?.username || null);
+  };
 
   const checkAdminStatus = async (): Promise<boolean> => {
     if (!user) return false;
@@ -47,13 +60,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check admin status when user logs in
+        // Check admin status and fetch username when user logs in
         if (session?.user) {
           setTimeout(() => {
             checkAdminStatus();
+            fetchUsername(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
+          setUsername(null);
         }
       }
     );
@@ -66,6 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user) {
         setTimeout(() => {
           checkAdminStatus();
+          fetchUsername(session.user.id);
         }, 0);
       }
       setLoading(false);
@@ -74,19 +90,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/`;
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, username: string) => {
+    // Check if username already exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return { error: { message: 'Username already taken' } };
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
-        redirectTo: redirectUrl,
+        data: {
+          username,
+        },
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
+    return { error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setUsername(null);
   };
 
   return (
@@ -96,7 +136,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session,
         isAdmin,
         loading,
-        signInWithGoogle,
+        username,
+        signIn,
+        signUp,
         signOut,
         checkAdminStatus,
       }}

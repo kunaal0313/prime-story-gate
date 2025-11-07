@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
+import Settings from '@/components/Settings';
 
 interface Part {
   id: string;
@@ -67,17 +68,20 @@ const StoryPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Prime Studios" className="h-10 w-10 rounded-full shadow-soft object-cover" />
-            <h1 className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              {story?.title}
-            </h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Prime Studios" className="h-10 w-10 rounded-full shadow-soft object-cover" />
+              <h1 className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                {story?.title}
+              </h1>
+            </div>
           </div>
+          <Settings />
         </div>
       </header>
 

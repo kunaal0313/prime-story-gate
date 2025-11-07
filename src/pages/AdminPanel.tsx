@@ -17,6 +17,7 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
+import Settings from '@/components/Settings';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -170,17 +171,20 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Prime Studios" className="h-10 w-10 rounded-full shadow-soft object-cover" />
-            <h1 className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              Admin Panel
-            </h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="Prime Studios" className="h-10 w-10 rounded-full shadow-soft object-cover" />
+              <h1 className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                Admin Panel
+              </h1>
+            </div>
           </div>
+          <Settings />
         </div>
       </header>
 

@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
-import { BookOpen, LogOut, User, KeyRound } from 'lucide-react';
+import { BookOpen, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
+import Settings from '@/components/Settings';
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,7 @@ interface Genre {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, signOut, checkAdminStatus } = useAuth();
+  const { checkAdminStatus } = useAuth();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
@@ -98,24 +99,7 @@ const Dashboard = () => {
               Prime Studios
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="h-4 w-4" />
-                  {user.email?.split('@')[0]}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={signOut} className="gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <Button variant="default" onClick={() => navigate('/')}>
-                Sign In
-              </Button>
-            )}
-          </div>
+          <Settings />
         </div>
       </header>
 

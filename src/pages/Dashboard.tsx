@@ -30,7 +30,9 @@ const Dashboard = () => {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [showPinDialog, setShowPinDialog] = useState(false);
   const [adminCode, setAdminCode] = useState('');
+  const [adminPin, setAdminPin] = useState('');
 
   useEffect(() => {
     fetchGenres();
@@ -58,7 +60,27 @@ const Dashboard = () => {
   };
 
   const handleCodeSubmit = async () => {
-    if (adminCode === 'code-51125') {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin-code', {
+        body: { code: adminCode }
+      });
+
+      if (error || !data?.valid) {
+        toast.error('Incorrect secret code');
+        setAdminCode('');
+        return;
+      }
+
+      setShowCodeDialog(false);
+      setAdminCode('');
+      setShowPinDialog(true);
+    } catch (error) {
+      toast.error('Failed to verify code');
+    }
+  };
+
+  const handlePinSubmit = async () => {
+    if (adminPin === '2025715') {
       const isAdmin = await checkAdminStatus();
       
       if (isAdmin) {
@@ -67,10 +89,10 @@ const Dashboard = () => {
         toast.error('You do not have admin privileges. Please contact an administrator.');
       }
     } else {
-      toast.error('Incorrect code');
+      toast.error('Incorrect PIN');
     }
-    setAdminCode('');
-    setShowCodeDialog(false);
+    setAdminPin('');
+    setShowPinDialog(false);
   };
 
   const handleGenreClick = (genreId: string) => {
@@ -158,14 +180,14 @@ const Dashboard = () => {
       <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter Admin Code</DialogTitle>
+            <DialogTitle>Enter Secret Code</DialogTitle>
             <DialogDescription>
-              Please enter the secret code to access the admin panel.
+              Please enter the secret code to continue.
             </DialogDescription>
           </DialogHeader>
           <Input
             type="password"
-            placeholder="Enter code..."
+            placeholder="Enter secret code..."
             value={adminCode}
             onChange={(e) => setAdminCode(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
@@ -175,6 +197,31 @@ const Dashboard = () => {
               Cancel
             </Button>
             <Button onClick={handleCodeSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin PIN Dialog */}
+      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Admin PIN</DialogTitle>
+            <DialogDescription>
+              Please enter your admin PIN to access the admin panel.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            placeholder="Enter PIN..."
+            value={adminPin}
+            onChange={(e) => setAdminPin(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPinDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePinSubmit}>Submit</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

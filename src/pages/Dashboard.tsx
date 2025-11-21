@@ -26,7 +26,7 @@ interface Genre {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { checkAdminStatus } = useAuth();
+  const { checkAdminStatus, user } = useAuth();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
@@ -81,42 +81,27 @@ const Dashboard = () => {
 
   const handlePinSubmit = async () => {
     if (adminPin === '2025715') {
+      if (!user) {
+        toast.error('Please log in first');
+        setAdminPin('');
+        setShowPinDialog(false);
+        return;
+      }
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          toast.error('Please log in first');
+        const { data, error } = await supabase.functions.invoke('grant-admin-role', {
+          body: { pin: adminPin },
+        });
+
+        if (error || !data?.success) {
+          console.error('Error from grant-admin-role function:', error, data);
+          toast.error('Failed to grant admin privileges');
           setAdminPin('');
           setShowPinDialog(false);
           return;
         }
 
-        // Check if user already has admin role
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        // Grant admin role if not already granted
-        if (!existingRole) {
-          const { error: insertError } = await supabase
-            .from('user_roles')
-            .insert({ user_id: user.id, role: 'admin' });
-
-          if (insertError) {
-            console.error('Error granting admin role:', insertError);
-            toast.error('Failed to grant admin privileges');
-            setAdminPin('');
-            setShowPinDialog(false);
-            return;
-          }
-        }
-
-        // Refresh admin status
         await checkAdminStatus();
-        
         toast.success('Admin access granted!');
         navigate('/admin');
       } catch (error) {

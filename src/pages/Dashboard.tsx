@@ -81,12 +81,47 @@ const Dashboard = () => {
 
   const handlePinSubmit = async () => {
     if (adminPin === '2025715') {
-      const isAdmin = await checkAdminStatus();
-      
-      if (isAdmin) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error('Please log in first');
+          setAdminPin('');
+          setShowPinDialog(false);
+          return;
+        }
+
+        // Check if user already has admin role
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        // Grant admin role if not already granted
+        if (!existingRole) {
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({ user_id: user.id, role: 'admin' });
+
+          if (insertError) {
+            console.error('Error granting admin role:', insertError);
+            toast.error('Failed to grant admin privileges');
+            setAdminPin('');
+            setShowPinDialog(false);
+            return;
+          }
+        }
+
+        // Refresh admin status
+        await checkAdminStatus();
+        
+        toast.success('Admin access granted!');
         navigate('/admin');
-      } else {
-        toast.error('You do not have admin privileges. Please contact an administrator.');
+      } catch (error) {
+        console.error('Error in PIN verification:', error);
+        toast.error('An error occurred. Please try again.');
       }
     } else {
       toast.error('Incorrect PIN');

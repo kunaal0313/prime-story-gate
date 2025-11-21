@@ -23,6 +23,7 @@ import {
   FileText,
   FolderOpen,
   Upload,
+  Pencil,
 } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
@@ -50,6 +51,11 @@ const AdminPanel = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [addType, setAddType] = useState<'genre' | 'story' | 'part' | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
+  // Edit states
+  const [editingGenre, setEditingGenre] = useState<any>(null);
+  const [editingStory, setEditingStory] = useState<any>(null);
+  const [editingPart, setEditingPart] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -199,6 +205,79 @@ const AdminPanel = () => {
     }
   };
 
+  const updateGenre = async () => {
+    if (!editingGenre?.name.trim()) {
+      toast.error('Genre name is required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('genres')
+        .update({ name: editingGenre.name, description: editingGenre.description })
+        .eq('id', editingGenre.id);
+      if (error) throw error;
+
+      toast.success('Genre updated successfully');
+      setEditingGenre(null);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update genre');
+    }
+  };
+
+  const updateStory = async () => {
+    if (!editingStory?.genre_id || !editingStory?.title.trim()) {
+      toast.error('Genre and title are required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .update({
+          genre_id: editingStory.genre_id,
+          title: editingStory.title,
+          description: editingStory.description,
+        })
+        .eq('id', editingStory.id);
+      if (error) throw error;
+
+      toast.success('Story updated successfully');
+      setEditingStory(null);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update story');
+    }
+  };
+
+  const updatePart = async () => {
+    if (!editingPart?.story_id || !editingPart?.title.trim() || !editingPart?.content.trim()) {
+      toast.error('Story, title, and content are required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('parts')
+        .update({
+          story_id: editingPart.story_id,
+          title: editingPart.title,
+          content: editingPart.content,
+          order_number: editingPart.order_number,
+        })
+        .eq('id', editingPart.id);
+      if (error) throw error;
+
+      toast.success('Part updated successfully');
+      setEditingPart(null);
+      setUploadedFile(null);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update part');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -270,13 +349,22 @@ const AdminPanel = () => {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteGenre(genre.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingGenre(genre)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteGenre(genre.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -305,13 +393,22 @@ const AdminPanel = () => {
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteStory(story.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingStory(story)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteStory(story.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -342,13 +439,22 @@ const AdminPanel = () => {
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deletePart(part.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingPart(part)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deletePart(part.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -490,7 +596,7 @@ const AdminPanel = () => {
 
         {/* Add Part Dialog */}
         <Dialog open={addType === 'part'} onOpenChange={() => setAddType(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Part</DialogTitle>
               <DialogDescription>
@@ -564,6 +670,152 @@ const AdminPanel = () => {
               </div>
               <Button onClick={addPart} className="w-full">
                 Create Part
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Genre Dialog */}
+        <Dialog open={!!editingGenre} onOpenChange={() => setEditingGenre(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Genre</DialogTitle>
+              <DialogDescription>
+                Update the genre information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Genre Name</label>
+                <Input
+                  placeholder="Enter genre name"
+                  value={editingGenre?.name || ''}
+                  onChange={(e) => setEditingGenre({ ...editingGenre, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description (Optional)</label>
+                <Textarea
+                  placeholder="Enter description"
+                  value={editingGenre?.description || ''}
+                  onChange={(e) =>
+                    setEditingGenre({ ...editingGenre, description: e.target.value })
+                  }
+                />
+              </div>
+              <Button onClick={updateGenre} className="w-full">
+                Update Genre
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Story Dialog */}
+        <Dialog open={!!editingStory} onOpenChange={() => setEditingStory(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Story</DialogTitle>
+              <DialogDescription>
+                Update the story information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Story Title</label>
+                <Input
+                  placeholder="Enter story title"
+                  value={editingStory?.title || ''}
+                  onChange={(e) => setEditingStory({ ...editingStory, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Genre</label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={editingStory?.genre_id || ''}
+                  onChange={(e) => setEditingStory({ ...editingStory, genre_id: e.target.value })}
+                >
+                  <option value="">Select Genre</option>
+                  {genres.map((genre) => (
+                    <option key={genre.id} value={genre.id}>
+                      {genre.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description (Optional)</label>
+                <Textarea
+                  placeholder="Enter description"
+                  value={editingStory?.description || ''}
+                  onChange={(e) =>
+                    setEditingStory({ ...editingStory, description: e.target.value })
+                  }
+                />
+              </div>
+              <Button onClick={updateStory} className="w-full">
+                Update Story
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Part Dialog */}
+        <Dialog open={!!editingPart} onOpenChange={() => setEditingPart(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Part</DialogTitle>
+              <DialogDescription>
+                Update the part content and information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Story</label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={editingPart?.story_id || ''}
+                  onChange={(e) => setEditingPart({ ...editingPart, story_id: e.target.value })}
+                >
+                  <option value="">Select Story</option>
+                  {stories.map((story) => (
+                    <option key={story.id} value={story.id}>
+                      {story.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Part Title</label>
+                <Input
+                  placeholder="Enter part title"
+                  value={editingPart?.title || ''}
+                  onChange={(e) => setEditingPart({ ...editingPart, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Order Number</label>
+                <Input
+                  type="number"
+                  placeholder="Enter order number"
+                  value={editingPart?.order_number || 1}
+                  onChange={(e) =>
+                    setEditingPart({ ...editingPart, order_number: parseInt(e.target.value) })
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Content</label>
+                <Textarea
+                  placeholder="Enter content"
+                  value={editingPart?.content || ''}
+                  onChange={(e) => setEditingPart({ ...editingPart, content: e.target.value })}
+                  rows={15}
+                  className="font-mono text-sm"
+                />
+              </div>
+              <Button onClick={updatePart} className="w-full">
+                Update Part
               </Button>
             </div>
           </DialogContent>

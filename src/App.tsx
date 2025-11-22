@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import GenrePage from "./pages/GenrePage";
 import StoryPage from "./pages/StoryPage";
 import PartReader from "./pages/PartReader";
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/genre/:genreId" element={<GenrePage />} />
               <Route path="/story/:storyId" element={<StoryPage />} />
               <Route path="/part/:partId" element={<PartReader />} />

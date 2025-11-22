@@ -29,7 +29,7 @@ const Settings = () => {
   };
 
   const handleProfile = () => {
-    toast.info('Profile feature coming soon!');
+    navigate('/profile');
   };
 
   const handleReadingHistory = () => {

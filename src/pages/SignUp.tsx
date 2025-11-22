@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import logo from '@/assets/logo.jpg';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -15,6 +19,7 @@ const SignUp = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,7 +31,7 @@ const SignUp = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !username || !confirmPassword) {
+    if (!email || !password || !username || !confirmPassword || !dateOfBirth) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -47,7 +52,7 @@ const SignUp = () => {
     }
 
     setSubmitting(true);
-    const { error } = await signUp(email, password, username);
+    const { error } = await signUp(email, password, username, dateOfBirth);
     
     if (error) {
       toast.error(error.message || 'Failed to create account');
@@ -137,6 +142,41 @@ const SignUp = () => {
               disabled={submitting}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateOfBirth && "text-muted-foreground"
+                  )}
+                  disabled={submitting}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateOfBirth ? (
+                    format(dateOfBirth, "PPP")
+                  ) : (
+                    <span>Pick your date of birth</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateOfBirth}
+                  onSelect={setDateOfBirth}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Button

@@ -149,20 +149,22 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
-        {isAdmin ? (
-          <Tabs defaultValue="user" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto mb-8 grid-cols-2">
-              <TabsTrigger value="user" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                User View
-              </TabsTrigger>
-              <TabsTrigger value="admin" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Admin Panel
-              </TabsTrigger>
-            </TabsList>
+      {isAdmin ? (
+          <Tabs defaultValue="user" className="w-full" orientation="vertical">
+            <div className="flex gap-6">
+              <TabsList className="flex flex-col h-fit w-48 shrink-0">
+                <TabsTrigger value="user" className="flex items-center gap-2 w-full justify-start">
+                  <User className="h-4 w-4" />
+                  User View
+                </TabsTrigger>
+                <TabsTrigger value="admin" className="flex items-center gap-2 w-full justify-start">
+                  <Shield className="h-4 w-4" />
+                  Admin Panel
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="user">
+              <div className="flex-1">
+                <TabsContent value="user" className="mt-0">
               <div className="mb-8 text-center">
                 <h2 className="text-3xl font-bold mb-2">Explore Genres</h2>
                 <p className="text-muted-foreground">
@@ -196,25 +198,27 @@ const Dashboard = () => {
                   ))}
                 </div>
               )}
-            </TabsContent>
+                </TabsContent>
 
-            <TabsContent value="admin">
-              <div className="flex flex-col items-center justify-center py-16">
-                <Shield className="h-20 w-20 text-primary mb-6" />
-                <h2 className="text-3xl font-bold mb-4">Admin Panel Access</h2>
-                <p className="text-muted-foreground mb-8 text-center max-w-md">
-                  Manage genres, stories, and parts from the admin panel
-                </p>
-                <Button
-                  onClick={() => navigate('/admin')}
-                  size="lg"
-                  className="shadow-lg bg-gradient-hero"
-                >
-                  <Shield className="mr-2 h-5 w-5" />
-                  Open Admin Panel
-                </Button>
+                <TabsContent value="admin" className="mt-0">
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Shield className="h-20 w-20 text-primary mb-6" />
+                    <h2 className="text-3xl font-bold mb-4">Admin Panel Access</h2>
+                    <p className="text-muted-foreground mb-8 text-center max-w-md">
+                      Manage genres, stories, and parts from the admin panel
+                    </p>
+                    <Button
+                      onClick={() => navigate('/admin')}
+                      size="lg"
+                      className="shadow-lg bg-gradient-hero"
+                    >
+                      <Shield className="mr-2 h-5 w-5" />
+                      Open Admin Panel
+                    </Button>
+                  </div>
+                </TabsContent>
               </div>
-            </TabsContent>
+            </div>
           </Tabs>
         ) : (
           <>

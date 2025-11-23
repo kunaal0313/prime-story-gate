@@ -7,6 +7,7 @@ import { ArrowLeft, BookOpen, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
+import CommentSection from '@/components/CommentSection';
 
 interface Part {
   id: string;
@@ -132,6 +133,9 @@ const PartReader = () => {
               </div>
             </div>
           </div>
+
+          {/* Comment Section */}
+          {part && <CommentSection partId={part.id} />}
         </article>
       </main>
     </div>

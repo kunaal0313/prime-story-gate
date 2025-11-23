@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
-import { BookOpen, KeyRound, Shield, User } from 'lucide-react';
+import { BookOpen, KeyRound, Shield, User, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [adminPin, setAdminPin] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchGenres();
@@ -121,6 +122,10 @@ const Dashboard = () => {
     navigate(`/genre/${genreId}`);
   };
 
+  const filteredGenres = genres.filter(genre =>
+    genre.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -149,37 +154,69 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
-      {isAdmin ? (
-          <Tabs defaultValue="user" className="w-full" orientation="vertical">
-            <div className="flex gap-6">
-              <TabsList className="flex flex-col h-fit w-48 shrink-0">
-                <TabsTrigger value="user" className="flex items-center gap-2 w-full justify-start">
-                  <User className="h-4 w-4" />
-                  User View
-                </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2 w-full justify-start">
-                  <Shield className="h-4 w-4" />
-                  Admin Panel
-                </TabsTrigger>
-              </TabsList>
+        {isAdmin ? (
+          <Tabs defaultValue="admin" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto mb-8 grid-cols-2">
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Admin
+              </TabsTrigger>
+              <TabsTrigger value="user" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                User
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="flex-1">
-                <TabsContent value="user" className="mt-0">
-              <div className="mb-8 text-center">
-                <h2 className="text-3xl font-bold mb-2">Explore Genres</h2>
-                <p className="text-muted-foreground">
+            <TabsContent value="admin">
+              <div className="flex flex-col items-center justify-center py-16">
+                <Shield className="h-20 w-20 text-primary mb-6" />
+                <h2 className="text-3xl font-bold mb-4">Admin Panel</h2>
+                <p className="text-muted-foreground mb-8 text-center max-w-md">
+                  Manage genres, stories, and parts from the admin panel
+                </p>
+                <Button
+                  onClick={() => navigate('/admin')}
+                  size="lg"
+                  className="shadow-lg bg-gradient-hero"
+                >
+                  <Shield className="mr-2 h-5 w-5" />
+                  Open Admin Panel
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="user">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold mb-2 text-center">Explore Genres</h2>
+                <p className="text-muted-foreground text-center mb-6">
                   Choose a genre to discover amazing stories
                 </p>
+                
+                {/* Search Bar */}
+                <div className="max-w-md mx-auto mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search genres..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {genres.length === 0 ? (
+              {filteredGenres.length === 0 ? (
                 <div className="text-center py-16">
                   <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-xl text-muted-foreground">No genres available yet</p>
+                  <p className="text-xl text-muted-foreground">
+                    {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {genres.map((genre) => (
+                  {filteredGenres.map((genre) => (
                     <Card
                       key={genre.id}
                       onClick={() => handleGenreClick(genre.id)}
@@ -198,45 +235,41 @@ const Dashboard = () => {
                   ))}
                 </div>
               )}
-                </TabsContent>
-
-                <TabsContent value="admin" className="mt-0">
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <Shield className="h-20 w-20 text-primary mb-6" />
-                    <h2 className="text-3xl font-bold mb-4">Admin Panel Access</h2>
-                    <p className="text-muted-foreground mb-8 text-center max-w-md">
-                      Manage genres, stories, and parts from the admin panel
-                    </p>
-                    <Button
-                      onClick={() => navigate('/admin')}
-                      size="lg"
-                      className="shadow-lg bg-gradient-hero"
-                    >
-                      <Shield className="mr-2 h-5 w-5" />
-                      Open Admin Panel
-                    </Button>
-                  </div>
-                </TabsContent>
-              </div>
-            </div>
+            </TabsContent>
           </Tabs>
         ) : (
           <>
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-bold mb-2">Explore Genres</h2>
-              <p className="text-muted-foreground">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold mb-2 text-center">Explore Genres</h2>
+              <p className="text-muted-foreground text-center mb-6">
                 Choose a genre to discover amazing stories
               </p>
+              
+              {/* Search Bar */}
+              <div className="max-w-md mx-auto mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search genres..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
             </div>
 
-            {genres.length === 0 ? (
+            {filteredGenres.length === 0 ? (
               <div className="text-center py-16">
                 <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-xl text-muted-foreground">No genres available yet</p>
+                <p className="text-xl text-muted-foreground">
+                  {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {genres.map((genre) => (
+                {filteredGenres.map((genre) => (
                   <Card
                     key={genre.id}
                     onClick={() => handleGenreClick(genre.id)}

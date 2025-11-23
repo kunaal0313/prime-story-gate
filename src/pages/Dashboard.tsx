@@ -292,19 +292,21 @@ const Dashboard = () => {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
-        <div className="container mx-auto px-4 py-6 flex justify-center">
-          <Button
-            variant="ghost"
-            onClick={handleAuthorClick}
-            className="gap-2 hover:text-primary"
-          >
-            <KeyRound className="h-4 w-4" />
-            Author?
-          </Button>
-        </div>
-      </footer>
+      {/* Footer - Only show for non-admin users */}
+      {!isAdmin && (
+        <footer className="border-t bg-card/50 backdrop-blur-sm mt-auto">
+          <div className="container mx-auto px-4 py-6 flex justify-center">
+            <Button
+              variant="ghost"
+              onClick={handleAuthorClick}
+              className="gap-2 hover:text-primary"
+            >
+              <KeyRound className="h-4 w-4" />
+              Author?
+            </Button>
+          </div>
+        </footer>
+      )}
 
       {/* Admin Code Dialog */}
       <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>

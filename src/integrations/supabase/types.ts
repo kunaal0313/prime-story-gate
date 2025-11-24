@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          link: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          link?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string

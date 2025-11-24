@@ -24,6 +24,7 @@ import {
   FolderOpen,
   Upload,
   Pencil,
+  Megaphone,
 } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
@@ -34,6 +35,7 @@ const AdminPanel = () => {
   const [genres, setGenres] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [parts, setParts] = useState<any[]>([]);
+  const [advertisements, setAdvertisements] = useState<any[]>([]);
 
   // Form states
   const [newGenre, setNewGenre] = useState({ name: '', description: '' });
@@ -49,13 +51,20 @@ const AdminPanel = () => {
     order_number: 1,
   });
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [addType, setAddType] = useState<'genre' | 'story' | 'part' | null>(null);
+  const [addType, setAddType] = useState<'genre' | 'story' | 'part' | 'advertisement' | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [newAd, setNewAd] = useState({
+    title: '',
+    content: '',
+    link: '',
+    is_active: true,
+  });
   
   // Edit states
   const [editingGenre, setEditingGenre] = useState<any>(null);
   const [editingStory, setEditingStory] = useState<any>(null);
   const [editingPart, setEditingPart] = useState<any>(null);
+  const [editingAd, setEditingAd] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -68,15 +77,17 @@ const AdminPanel = () => {
 
   const fetchAll = async () => {
     try {
-      const [genresData, storiesData, partsData] = await Promise.all([
+      const [genresData, storiesData, partsData, adsData] = await Promise.all([
         supabase.from('genres').select('*').order('name'),
         supabase.from('stories').select('*, genres(name)').order('title'),
         supabase.from('parts').select('*, stories(title)').order('order_number'),
+        supabase.from('advertisements').select('*').order('created_at', { ascending: false }),
       ]);
 
       if (genresData.data) setGenres(genresData.data);
       if (storiesData.data) setStories(storiesData.data);
       if (partsData.data) setParts(partsData.data);
+      if (adsData.data) setAdvertisements(adsData.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -87,7 +98,7 @@ const AdminPanel = () => {
     setShowAddDialog(true);
   };
 
-  const handleAddTypeSelect = (type: 'genre' | 'story' | 'part') => {
+  const handleAddTypeSelect = (type: 'genre' | 'story' | 'part' | 'advertisement') => {
     setAddType(type);
     setShowAddDialog(false);
   };
@@ -278,6 +289,63 @@ const AdminPanel = () => {
     }
   };
 
+  const addAdvertisement = async () => {
+    if (!newAd.title.trim() || !newAd.content.trim()) {
+      toast.error('Title and content are required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('advertisements').insert([newAd]);
+      if (error) throw error;
+
+      toast.success('Advertisement added successfully');
+      setNewAd({ title: '', content: '', link: '', is_active: true });
+      setAddType(null);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add advertisement');
+    }
+  };
+
+  const deleteAdvertisement = async (id: string) => {
+    try {
+      const { error } = await supabase.from('advertisements').delete().eq('id', id);
+      if (error) throw error;
+
+      toast.success('Advertisement deleted successfully');
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete advertisement');
+    }
+  };
+
+  const updateAdvertisement = async () => {
+    if (!editingAd?.title.trim() || !editingAd?.content.trim()) {
+      toast.error('Title and content are required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('advertisements')
+        .update({
+          title: editingAd.title,
+          content: editingAd.content,
+          link: editingAd.link,
+          is_active: editingAd.is_active,
+        })
+        .eq('id', editingAd.id);
+      if (error) throw error;
+
+      toast.success('Advertisement updated successfully');
+      setEditingAd(null);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update advertisement');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -312,7 +380,7 @@ const AdminPanel = () => {
 
       <main className="container mx-auto px-4 py-8 pb-24">
         <Tabs defaultValue="genres" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4 mx-auto">
             <TabsTrigger value="genres">
               <FolderOpen className="h-4 w-4 mr-2" />
               Genres
@@ -324,6 +392,10 @@ const AdminPanel = () => {
             <TabsTrigger value="parts">
               <FileText className="h-4 w-4 mr-2" />
               Parts
+            </TabsTrigger>
+            <TabsTrigger value="ads">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Ads
             </TabsTrigger>
           </TabsList>
 
@@ -460,6 +532,61 @@ const AdminPanel = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Advertisements Tab */}
+          <TabsContent value="ads" className="space-y-6">
+            {advertisements.length === 0 ? (
+              <div className="text-center py-16">
+                <Megaphone className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-xl text-muted-foreground">No advertisements posted yet</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {advertisements.map((ad) => (
+                  <Card key={ad.id} className="p-4 flex items-center justify-between hover:shadow-card transition-all">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="h-10 w-10 rounded-full bg-gradient-hero flex items-center justify-center">
+                        <Megaphone className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{ad.title}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{ad.content}</p>
+                        {ad.link && (
+                          <a 
+                            href={ad.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline"
+                          >
+                            {ad.link}
+                          </a>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Status: {ad.is_active ? '✓ Active' : '✗ Inactive'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingAd(ad)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteAdvertisement(ad.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Floating Action Button */}
@@ -504,6 +631,14 @@ const AdminPanel = () => {
               >
                 <FileText className="h-6 w-6 mr-3" />
                 Add Part
+              </Button>
+              <Button
+                onClick={() => handleAddTypeSelect('advertisement')}
+                className="h-20 text-lg"
+                variant="outline"
+              >
+                <Megaphone className="h-6 w-6 mr-3" />
+                Add Advertisement
               </Button>
             </div>
           </DialogContent>
@@ -816,6 +951,114 @@ const AdminPanel = () => {
               </div>
               <Button onClick={updatePart} className="w-full">
                 Update Part
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Advertisement Dialog */}
+        <Dialog open={addType === 'advertisement'} onOpenChange={() => setAddType(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Advertisement</DialogTitle>
+              <DialogDescription>
+                Create a new advertisement to display
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Title</label>
+                <Input
+                  placeholder="Enter advertisement title"
+                  value={newAd.title}
+                  onChange={(e) => setNewAd({ ...newAd, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Content</label>
+                <Textarea
+                  placeholder="Enter advertisement content"
+                  value={newAd.content}
+                  onChange={(e) => setNewAd({ ...newAd, content: e.target.value })}
+                  rows={4}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Link (Optional)</label>
+                <Input
+                  placeholder="Enter link URL"
+                  value={newAd.link}
+                  onChange={(e) => setNewAd({ ...newAd, link: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={newAd.is_active}
+                  onChange={(e) => setNewAd({ ...newAd, is_active: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="is_active" className="text-sm font-medium">
+                  Active (Display to users)
+                </label>
+              </div>
+              <Button onClick={addAdvertisement} className="w-full">
+                Create Advertisement
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Advertisement Dialog */}
+        <Dialog open={!!editingAd} onOpenChange={() => setEditingAd(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Advertisement</DialogTitle>
+              <DialogDescription>
+                Update the advertisement information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Title</label>
+                <Input
+                  placeholder="Enter advertisement title"
+                  value={editingAd?.title || ''}
+                  onChange={(e) => setEditingAd({ ...editingAd, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Content</label>
+                <Textarea
+                  placeholder="Enter advertisement content"
+                  value={editingAd?.content || ''}
+                  onChange={(e) => setEditingAd({ ...editingAd, content: e.target.value })}
+                  rows={4}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Link (Optional)</label>
+                <Input
+                  placeholder="Enter link URL"
+                  value={editingAd?.link || ''}
+                  onChange={(e) => setEditingAd({ ...editingAd, link: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit_is_active"
+                  checked={editingAd?.is_active || false}
+                  onChange={(e) => setEditingAd({ ...editingAd, is_active: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="edit_is_active" className="text-sm font-medium">
+                  Active (Display to users)
+                </label>
+              </div>
+              <Button onClick={updateAdvertisement} className="w-full">
+                Update Advertisement
               </Button>
             </div>
           </DialogContent>

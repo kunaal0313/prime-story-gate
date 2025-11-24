@@ -10,16 +10,21 @@ import { Label } from '@/components/ui/label';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { user, signIn, loading } = useAuth();
+  const { user, signIn, loading, isAdmin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      // Redirect to admin panel if user is admin, otherwise to dashboard
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     }
-  }, [user, navigate]);
+  }, [user, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

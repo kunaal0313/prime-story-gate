@@ -9,6 +9,7 @@ import { BookOpen, KeyRound, Shield, User, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
+import Advertisement from '@/components/Advertisement';
 import {
   Dialog,
   DialogContent,
@@ -154,6 +155,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
+        <Advertisement />
         {isAdmin ? (
           <Tabs defaultValue="admin" className="w-full">
             <TabsList className="grid w-full max-w-md mx-auto mb-8 grid-cols-2">

@@ -1,1 +1,10 @@
 project_id = "qcemfezymxjgtnbghnxm"
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.grant-admin-role]
+verify_jwt = false
+
+[functions.verify-admin-code]
+verify_jwt = false

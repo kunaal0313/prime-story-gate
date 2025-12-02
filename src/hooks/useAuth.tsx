@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -26,13 +27,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [username, setUsername] = useState<string | null>(null);
 
   const fetchUsername = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('username')
       .eq('user_id', userId)
       .maybeSingle();
     
+    // If profile not found, user might have been deleted
+    if (error || !data) {
+      return null;
+    }
+    
     setUsername(data?.username || null);
+    return data?.username;
   };
 
   const checkAdminStatus = async (): Promise<boolean> => {
@@ -58,14 +65,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Handle token refresh errors (user might have been deleted)
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          toast.error('Your account has been removed by an administrator.');
+          setSession(null);
+          setUser(null);
+          setIsAdmin(false);
+          setUsername(null);
+          window.location.href = '/signup';
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setIsAdmin(false);
+          setUsername(null);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         
         // Check admin status and fetch username when user logs in
         if (session?.user) {
-          setTimeout(() => {
+          setTimeout(async () => {
+            const usernameResult = await fetchUsername(session.user.id);
+            // If no username found, user might have been deleted
+            if (!usernameResult && session?.user) {
+              toast.error('Your account has been removed by an administrator.');
+              await supabase.auth.signOut();
+              window.location.href = '/signup';
+              return;
+            }
             checkAdminStatus();
-            fetchUsername(session.user.id);
           }, 0);
         } else {
           setIsAdmin(false);
@@ -75,14 +108,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      // Check for refresh token errors
+      if (error && error.message?.includes('Refresh Token')) {
+        toast.error('Your account has been removed by an administrator.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        window.location.href = '/signup';
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
+        setTimeout(async () => {
+          const usernameResult = await fetchUsername(session.user.id);
+          if (!usernameResult && session?.user) {
+            toast.error('Your account has been removed by an administrator.');
+            await supabase.auth.signOut();
+            window.location.href = '/signup';
+            return;
+          }
           checkAdminStatus();
-          fetchUsername(session.user.id);
         }, 0);
       }
       setLoading(false);

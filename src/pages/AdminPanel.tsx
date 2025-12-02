@@ -351,6 +351,26 @@ const AdminPanel = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete the user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`User "${username}" has been deleted successfully`);
+      fetchAll();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete user');
+    }
+  };
+
   const updateAdvertisement = async () => {
     if (!editingAd?.title.trim() || !editingAd?.content.trim()) {
       toast.error('Title and content are required');
@@ -683,27 +703,35 @@ const AdminPanel = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {users.map((user) => (
-                    <Card key={user.id} className="p-4 hover:shadow-card transition-all">
+                  {users.map((u) => (
+                    <Card key={u.id} className="p-4 hover:shadow-card transition-all">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-gradient-hero flex items-center justify-center">
                             <span className="text-white font-bold">
-                              {user.username?.charAt(0).toUpperCase() || 'U'}
+                              {u.username?.charAt(0).toUpperCase() || 'U'}
                             </span>
                           </div>
                           <div>
-                            <h4 className="font-medium">{user.username}</h4>
+                            <h4 className="font-medium">{u.username}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Joined: {format(new Date(user.created_at), 'MMM d, yyyy')}
+                              Joined: {format(new Date(u.created_at), 'MMM d, yyyy')}
                             </p>
+                            {u.date_of_birth && (
+                              <p className="text-xs text-muted-foreground">
+                                DOB: {format(new Date(u.date_of_birth), 'MMM d, yyyy')}
+                              </p>
+                            )}
                           </div>
                         </div>
-                        {user.date_of_birth && (
-                          <p className="text-xs text-muted-foreground">
-                            DOB: {format(new Date(user.date_of_birth), 'MMM d, yyyy')}
-                          </p>
-                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteUser(u.user_id, u.username)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </Card>
                   ))}

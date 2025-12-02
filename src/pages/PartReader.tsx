@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { ArrowLeft, BookOpen, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
@@ -20,7 +21,8 @@ interface Part {
 const PartReader = () => {
   const navigate = useNavigate();
   const { partId } = useParams<{ partId: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, username, loading: authLoading } = useAuth();
+  const { trackActivity } = useActivityTracker();
   const [part, setPart] = useState<Part | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +35,12 @@ const PartReader = () => {
       }
     }
   }, [partId, user, authLoading]);
+
+  useEffect(() => {
+    if (part && user && username) {
+      trackActivity('read_part', `Read part: ${part.title}`, `/part/${partId}`);
+    }
+  }, [part, user, username]);
 
   const fetchPart = async () => {
     try {

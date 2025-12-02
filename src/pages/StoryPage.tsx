@@ -7,6 +7,8 @@ import { ArrowLeft, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
+import { useAuth } from '@/hooks/useAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 
 interface Part {
   id: string;
@@ -23,6 +25,8 @@ interface Story {
 const StoryPage = () => {
   const navigate = useNavigate();
   const { storyId } = useParams<{ storyId: string }>();
+  const { user, username } = useAuth();
+  const { trackActivity } = useActivityTracker();
   const [story, setStory] = useState<Story | null>(null);
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,12 @@ const StoryPage = () => {
       fetchStoryAndParts();
     }
   }, [storyId]);
+
+  useEffect(() => {
+    if (story && user && username) {
+      trackActivity('view_story', `Viewed story: ${story.title}`, `/story/${storyId}`);
+    }
+  }, [story, user, username]);
 
   const fetchStoryAndParts = async () => {
     try {

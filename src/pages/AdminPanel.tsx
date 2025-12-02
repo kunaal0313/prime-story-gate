@@ -25,7 +25,12 @@ import {
   Upload,
   Pencil,
   Megaphone,
+  Users,
+  Activity,
+  Eye,
+  MessageSquare,
 } from 'lucide-react';
+import { format } from 'date-fns';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
 
@@ -36,6 +41,14 @@ const AdminPanel = () => {
   const [stories, setStories] = useState<any[]>([]);
   const [parts, setParts] = useState<any[]>([]);
   const [advertisements, setAdvertisements] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [userActivity, setUserActivity] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    activeToday: 0,
+    totalPageViews: 0,
+    totalComments: 0,
+  });
 
   // Form states
   const [newGenre, setNewGenre] = useState({ name: '', description: '' });
@@ -77,17 +90,35 @@ const AdminPanel = () => {
 
   const fetchAll = async () => {
     try {
-      const [genresData, storiesData, partsData, adsData] = await Promise.all([
+      const [genresData, storiesData, partsData, adsData, profilesData, activityData, commentsData] = await Promise.all([
         supabase.from('genres').select('*').order('name'),
         supabase.from('stories').select('*, genres(name)').order('title'),
         supabase.from('parts').select('*, stories(title)').order('order_number'),
         supabase.from('advertisements').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_activity').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('comments').select('*'),
       ]);
 
       if (genresData.data) setGenres(genresData.data);
       if (storiesData.data) setStories(storiesData.data);
       if (partsData.data) setParts(partsData.data);
       if (adsData.data) setAdvertisements(adsData.data);
+      if (profilesData.data) setUsers(profilesData.data);
+      if (activityData.data) setUserActivity(activityData.data);
+
+      // Calculate stats
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const activeToday = activityData.data?.filter(a => new Date(a.created_at) >= today).length || 0;
+      const pageViews = activityData.data?.filter(a => a.action === 'page_view').length || 0;
+
+      setUserStats({
+        totalUsers: profilesData.data?.length || 0,
+        activeToday: new Set(activityData.data?.filter(a => new Date(a.created_at) >= today).map(a => a.user_id)).size,
+        totalPageViews: pageViews,
+        totalComments: commentsData.data?.length || 0,
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -380,7 +411,7 @@ const AdminPanel = () => {
 
       <main className="container mx-auto px-4 py-8 pb-24">
         <Tabs defaultValue="genres" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 mx-auto">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5 mx-auto">
             <TabsTrigger value="genres">
               <FolderOpen className="h-4 w-4 mr-2" />
               Genres
@@ -396,6 +427,10 @@ const AdminPanel = () => {
             <TabsTrigger value="ads">
               <Megaphone className="h-4 w-4 mr-2" />
               Ads
+            </TabsTrigger>
+            <TabsTrigger value="users">
+              <Users className="h-4 w-4 mr-2" />
+              Users
             </TabsTrigger>
           </TabsList>
 
@@ -586,6 +621,135 @@ const AdminPanel = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* Users Analytics Tab */}
+          <TabsContent value="users" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{userStats.totalUsers}</p>
+                    <p className="text-xs text-muted-foreground">Total Users</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{userStats.activeToday}</p>
+                    <p className="text-xs text-muted-foreground">Active Today</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Eye className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{userStats.totalPageViews}</p>
+                    <p className="text-xs text-muted-foreground">Page Views</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{userStats.totalComments}</p>
+                    <p className="text-xs text-muted-foreground">Total Comments</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Users List */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Registered Users</h3>
+              {users.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No users registered yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {users.map((user) => (
+                    <Card key={user.id} className="p-4 hover:shadow-card transition-all">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-hero flex items-center justify-center">
+                            <span className="text-white font-bold">
+                              {user.username?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{user.username}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Joined: {format(new Date(user.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                        {user.date_of_birth && (
+                          <p className="text-xs text-muted-foreground">
+                            DOB: {format(new Date(user.date_of_birth), 'MMM d, yyyy')}
+                          </p>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+              {userActivity.length === 0 ? (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No activity recorded yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {userActivity.map((activity) => (
+                    <Card key={activity.id} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            {activity.action === 'page_view' ? (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            ) : activity.action === 'comment' ? (
+                              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Activity className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{activity.username}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {activity.action}: {activity.details || activity.page}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(activity.created_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { Card } from '@/components/ui/card';
 import { BookOpen, KeyRound, Shield, User, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,7 +29,8 @@ interface Genre {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { checkAdminStatus, user, isAdmin } = useAuth();
+  const { checkAdminStatus, user, isAdmin, username } = useAuth();
+  const { trackActivity } = useActivityTracker();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
@@ -39,7 +41,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchGenres();
-  }, []);
+    // Track dashboard visit
+    if (user && username) {
+      trackActivity('page_view', 'Visited Dashboard', '/dashboard');
+    }
+  }, [user, username]);
 
   const fetchGenres = async () => {
     try {

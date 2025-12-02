@@ -209,6 +209,36 @@ export type Database = {
           },
         ]
       }
+      user_activity: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          page: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          page?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          page?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

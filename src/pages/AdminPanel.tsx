@@ -34,10 +34,6 @@ import {
 import { format } from 'date-fns';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -160,6 +156,9 @@ const AdminPanel = () => {
       toast.info('Extracting text from PDF...');
       
       try {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let fullText = '';

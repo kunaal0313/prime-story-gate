@@ -9,6 +9,7 @@ interface Ad {
   title: string;
   content: string;
   link: string | null;
+  image_url: string | null;
 }
 
 const Advertisement = () => {
@@ -42,7 +43,12 @@ const Advertisement = () => {
 
   const handleAdClick = () => {
     if (ad.link) {
-      window.open(ad.link, '_blank');
+      // Ensure link has protocol
+      let url = ad.link;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -59,6 +65,13 @@ const Advertisement = () => {
         <X className="h-4 w-4" />
       </Button>
       <div className="space-y-3 mt-6">
+        {ad.image_url && (
+          <img 
+            src={ad.image_url} 
+            alt={ad.title}
+            className="w-full h-32 object-cover rounded-md"
+          />
+        )}
         <h3 className="font-bold text-lg">{ad.title}</h3>
         <p className="text-sm text-muted-foreground">{ad.content}</p>
         {ad.link && (

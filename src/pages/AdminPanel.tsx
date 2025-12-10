@@ -29,10 +29,15 @@ import {
   Activity,
   Eye,
   MessageSquare,
+  Image,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -71,7 +76,10 @@ const AdminPanel = () => {
     content: '',
     link: '',
     is_active: true,
+    image_url: '',
   });
+  const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [uploadingAdImage, setUploadingAdImage] = useState(false);
   
   // Edit states
   const [editingGenre, setEditingGenre] = useState<any>(null);
@@ -134,23 +142,81 @@ const AdminPanel = () => {
     setShowAddDialog(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check if it's a PDF file
+      if (file.type !== 'application/pdf') {
+        toast.error('Only PDF files are allowed');
+        return;
+      }
+      
       const maxSize = 1024 * 1024 * 1024; // 1GB
       if (file.size > maxSize) {
         toast.error('File size must be less than 1GB');
         return;
       }
       setUploadedFile(file);
+      toast.info('Extracting text from PDF...');
       
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target?.result as string;
-        setNewPart({ ...newPart, content });
-      };
-      reader.readAsText(file);
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+          fullText += pageText + '\n\n';
+        }
+        
+        setNewPart({ ...newPart, content: fullText.trim() });
+        toast.success('PDF text extracted successfully');
+      } catch (error) {
+        console.error('Error extracting PDF text:', error);
+        toast.error('Failed to extract text from PDF');
+        setUploadedFile(null);
+      }
     }
+  };
+
+  const handleAdImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Only image files are allowed');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit for images
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      setAdImageFile(file);
+    }
+  };
+
+  const uploadAdImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('advertisements')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('advertisements')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   };
 
   const addGenre = async () => {
@@ -327,15 +393,31 @@ const AdminPanel = () => {
     }
 
     try {
-      const { error } = await supabase.from('advertisements').insert([newAd]);
+      setUploadingAdImage(true);
+      let imageUrl = newAd.image_url;
+
+      if (adImageFile) {
+        const uploadedUrl = await uploadAdImage(adImageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const { error } = await supabase.from('advertisements').insert([{
+        ...newAd,
+        image_url: imageUrl || null,
+      }]);
       if (error) throw error;
 
       toast.success('Advertisement added successfully');
-      setNewAd({ title: '', content: '', link: '', is_active: true });
+      setNewAd({ title: '', content: '', link: '', is_active: true, image_url: '' });
+      setAdImageFile(null);
       setAddType(null);
       fetchAll();
     } catch (error: any) {
       toast.error(error.message || 'Failed to add advertisement');
+    } finally {
+      setUploadingAdImage(false);
     }
   };
 
@@ -378,6 +460,16 @@ const AdminPanel = () => {
     }
 
     try {
+      setUploadingAdImage(true);
+      let imageUrl = editingAd.image_url;
+
+      if (adImageFile) {
+        const uploadedUrl = await uploadAdImage(adImageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('advertisements')
         .update({
@@ -385,15 +477,19 @@ const AdminPanel = () => {
           content: editingAd.content,
           link: editingAd.link,
           is_active: editingAd.is_active,
+          image_url: imageUrl,
         })
         .eq('id', editingAd.id);
       if (error) throw error;
 
       toast.success('Advertisement updated successfully');
       setEditingAd(null);
+      setAdImageFile(null);
       fetchAll();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update advertisement');
+    } finally {
+      setUploadingAdImage(false);
     }
   };
 
@@ -966,22 +1062,22 @@ const AdminPanel = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Upload Document</label>
+                <label className="text-sm font-medium mb-2 block">Upload PDF Document</label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                   <input
                     type="file"
                     id="file-upload"
                     className="hidden"
                     onChange={handleFileChange}
-                    accept=".txt,.doc,.docx,.pdf"
+                    accept=".pdf,application/pdf"
                   />
                   <label htmlFor="file-upload" className="cursor-pointer">
                     <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
-                      {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
+                      {uploadedFile ? uploadedFile.name : 'Click to upload PDF file'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Maximum file size: 1GB
+                      PDF files only • Max size: 1GB
                     </p>
                   </label>
                 </div>
@@ -1176,9 +1272,30 @@ const AdminPanel = () => {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium mb-2 block">Image (Optional)</label>
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    id="ad-image-upload"
+                    className="hidden"
+                    onChange={handleAdImageChange}
+                    accept="image/*"
+                  />
+                  <label htmlFor="ad-image-upload" className="cursor-pointer">
+                    <Image className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {adImageFile ? adImageFile.name : 'Click to upload image'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Max size: 5MB
+                    </p>
+                  </label>
+                </div>
+              </div>
+              <div>
                 <label className="text-sm font-medium mb-2 block">Link (Optional)</label>
                 <Input
-                  placeholder="Enter link URL"
+                  placeholder="Enter link URL (e.g., https://example.com)"
                   value={newAd.link}
                   onChange={(e) => setNewAd({ ...newAd, link: e.target.value })}
                 />
@@ -1195,8 +1312,8 @@ const AdminPanel = () => {
                   Active (Display to users)
                 </label>
               </div>
-              <Button onClick={addAdvertisement} className="w-full">
-                Create Advertisement
+              <Button onClick={addAdvertisement} className="w-full" disabled={uploadingAdImage}>
+                {uploadingAdImage ? 'Uploading...' : 'Create Advertisement'}
               </Button>
             </div>
           </DialogContent>
@@ -1230,9 +1347,32 @@ const AdminPanel = () => {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium mb-2 block">Image (Optional)</label>
+                {editingAd?.image_url && (
+                  <div className="mb-2">
+                    <img src={editingAd.image_url} alt="Current ad image" className="w-full h-24 object-cover rounded-md" />
+                  </div>
+                )}
+                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    id="edit-ad-image-upload"
+                    className="hidden"
+                    onChange={handleAdImageChange}
+                    accept="image/*"
+                  />
+                  <label htmlFor="edit-ad-image-upload" className="cursor-pointer">
+                    <Image className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      {adImageFile ? adImageFile.name : 'Click to upload new image'}
+                    </p>
+                  </label>
+                </div>
+              </div>
+              <div>
                 <label className="text-sm font-medium mb-2 block">Link (Optional)</label>
                 <Input
-                  placeholder="Enter link URL"
+                  placeholder="Enter link URL (e.g., https://example.com)"
                   value={editingAd?.link || ''}
                   onChange={(e) => setEditingAd({ ...editingAd, link: e.target.value })}
                 />
@@ -1249,8 +1389,8 @@ const AdminPanel = () => {
                   Active (Display to users)
                 </label>
               </div>
-              <Button onClick={updateAdvertisement} className="w-full">
-                Update Advertisement
+              <Button onClick={updateAdvertisement} className="w-full" disabled={uploadingAdImage}>
+                {uploadingAdImage ? 'Uploading...' : 'Update Advertisement'}
               </Button>
             </div>
           </DialogContent>

@@ -173,6 +173,8 @@ const SignUp = () => {
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  showYearMonthDropdowns
+                  defaultMonth={new Date(2000, 0)}
                   className="pointer-events-auto"
                 />
               </PopoverContent>

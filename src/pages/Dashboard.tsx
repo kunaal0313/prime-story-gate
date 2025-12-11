@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { useStreak } from '@/hooks/useStreak';
 import { Card } from '@/components/ui/card';
 import { BookOpen, KeyRound, Shield, User, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
 import Advertisement from '@/components/Advertisement';
+import { StreakDisplay } from '@/components/StreakDisplay';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { checkAdminStatus, user, isAdmin, username } = useAuth();
   const { trackActivity } = useActivityTracker();
+  const { streak, showAnimation, showPerfectWeek, dismissAnimation, dismissPerfectWeek } = useStreak();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
@@ -146,6 +149,17 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
+      {/* Streak Display */}
+      {user && (
+        <StreakDisplay
+          currentStreak={streak.currentStreak}
+          showAnimation={showAnimation}
+          showPerfectWeek={showPerfectWeek}
+          onDismissAnimation={dismissAnimation}
+          onDismissPerfectWeek={dismissPerfectWeek}
+        />
+      )}
+      
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

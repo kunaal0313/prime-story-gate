@@ -156,13 +156,24 @@ const AdminPanel = () => {
       toast.info('Extracting text from PDF...');
       
       try {
-        // Use legacy build to avoid top-level await issues
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
+        // Load PDF.js from CDN to avoid build issues
+        const pdfjsLib = (window as any).pdfjsLib;
+        if (!pdfjsLib) {
+          // Dynamically load the script if not already loaded
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load PDF.js'));
+            document.head.appendChild(script);
+          });
+        }
+        
+        const pdfLib = (window as any).pdfjsLib;
+        pdfLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        const pdf = await pdfLib.getDocument({ data: arrayBuffer }).promise;
         let fullText = '';
         
         for (let i = 1; i <= pdf.numPages; i++) {

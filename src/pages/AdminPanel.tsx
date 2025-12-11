@@ -156,11 +156,13 @@ const AdminPanel = () => {
       toast.info('Extracting text from PDF...');
       
       try {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // Use legacy build to avoid top-level await issues
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
         
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
         let fullText = '';
         
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -172,11 +174,17 @@ const AdminPanel = () => {
           fullText += pageText + '\n\n';
         }
         
-        setNewPart({ ...newPart, content: fullText.trim() });
-        toast.success('PDF text extracted successfully');
+        const extractedContent = fullText.trim();
+        if (extractedContent) {
+          setNewPart({ ...newPart, content: extractedContent });
+          toast.success('PDF text extracted successfully');
+        } else {
+          toast.warning('No text found in PDF. The PDF may contain only images.');
+          setUploadedFile(null);
+        }
       } catch (error) {
         console.error('Error extracting PDF text:', error);
-        toast.error('Failed to extract text from PDF');
+        toast.error('Failed to extract text from PDF. Please try a different file.');
         setUploadedFile(null);
       }
     }

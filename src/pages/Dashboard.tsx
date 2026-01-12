@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useStreak } from '@/hooks/useStreak';
 import { Card } from '@/components/ui/card';
-import { BookOpen, KeyRound, Shield, User, Search } from 'lucide-react';
+import { BookOpen, KeyRound, Shield, User, Search, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.jpg';
 import Settings from '@/components/Settings';
@@ -22,6 +23,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
 
 interface Genre {
   id: string;
@@ -36,15 +42,21 @@ const Dashboard = () => {
   const { streak, showAnimation, showPerfectWeek, dismissAnimation, dismissPerfectWeek } = useStreak();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCodeDialog, setShowCodeDialog] = useState(false);
-  const [showPinDialog, setShowPinDialog] = useState(false);
-  const [adminCode, setAdminCode] = useState('');
-  const [adminPin, setAdminPin] = useState('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showOtpDialog, setShowOtpDialog] = useState(false);
+  const [showRobotDialog, setShowRobotDialog] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminOtp, setAdminOtp] = useState('');
+  const [isRobotChecked, setIsRobotChecked] = useState(false);
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchGenres();
-    // Track dashboard visit
     if (user && username) {
       trackActivity('page_view', 'Visited Dashboard', '/dashboard');
     }
@@ -68,64 +80,130 @@ const Dashboard = () => {
   };
 
   const handleAuthorClick = () => {
-    setShowCodeDialog(true);
+    setShowPasswordDialog(true);
   };
 
-  const handleCodeSubmit = async () => {
+  const handlePasswordSubmit = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin-code', {
-        body: { code: adminCode }
+        body: { code: adminPassword }
       });
 
       if (error || !data?.valid) {
-        toast.error('Incorrect secret code');
-        setAdminCode('');
+        toast.error('Incorrect password');
+        setAdminPassword('');
         return;
       }
 
-      setShowCodeDialog(false);
-      setAdminCode('');
-      setShowPinDialog(true);
+      setShowPasswordDialog(false);
+      setAdminPassword('');
+      setShowEmailDialog(true);
     } catch (error) {
-      toast.error('Failed to verify code');
+      toast.error('Failed to verify password');
     }
   };
 
-  const handlePinSubmit = async () => {
-    if (adminPin === '2025715') {
-      if (!user) {
-        toast.error('Please log in first');
-        setAdminPin('');
-        setShowPinDialog(false);
+  const handleEmailSubmit = async () => {
+    if (!adminEmail || !adminEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setSendingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-admin-otp', {
+        body: { email: adminEmail }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.dev_otp) {
+        // DEV MODE: Show OTP in toast for testing
+        toast.success(`OTP sent! (Dev mode: ${data.dev_otp})`);
+      } else {
+        toast.success('OTP sent to your email');
+      }
+
+      setShowEmailDialog(false);
+      setShowOtpDialog(true);
+    } catch (error) {
+      toast.error('Failed to send OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleOtpSubmit = async () => {
+    if (adminOtp.length !== 6) {
+      toast.error('Please enter the complete 6-digit OTP');
+      return;
+    }
+
+    setVerifyingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin-otp', {
+        body: { email: adminEmail, otp: adminOtp }
+      });
+
+      if (error || !data?.valid) {
+        toast.error('Invalid or expired OTP');
+        setAdminOtp('');
+        setVerifyingOtp(false);
         return;
       }
 
-      try {
-        const { data, error } = await supabase.functions.invoke('grant-admin-role', {
-          body: { pin: adminPin },
-        });
-
-        if (error || !data?.success) {
-          console.error('Error from grant-admin-role function:', error, data);
-          toast.error('Failed to grant admin privileges');
-          setAdminPin('');
-          setShowPinDialog(false);
-          return;
-        }
-
-        await checkAdminStatus();
-        toast.success('Admin access granted! You now have permanent admin privileges.');
-        setShowPinDialog(false);
-        setAdminPin('');
-      } catch (error) {
-        console.error('Error in PIN verification:', error);
-        toast.error('An error occurred. Please try again.');
-      }
-    } else {
-      toast.error('Incorrect PIN');
+      setShowOtpDialog(false);
+      setAdminOtp('');
+      setShowRobotDialog(true);
+    } catch (error) {
+      toast.error('Failed to verify OTP');
+    } finally {
+      setVerifyingOtp(false);
     }
-    setAdminPin('');
-    setShowPinDialog(false);
+  };
+
+  const handleRobotCheck = async () => {
+    if (!isRobotChecked) {
+      toast.error('Please confirm you are not a robot');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Please log in first');
+      setShowRobotDialog(false);
+      return;
+    }
+
+    setRobotLoading(true);
+    
+    // Wait exactly 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('grant-admin-role', {
+        body: { pin: '2025715' }, // Using the existing pin validation
+      });
+
+      if (error || !data?.success) {
+        console.error('Error from grant-admin-role function:', error, data);
+        toast.error('Failed to grant admin privileges');
+        setRobotLoading(false);
+        setShowRobotDialog(false);
+        return;
+      }
+
+      await checkAdminStatus();
+      toast.success('Admin access granted! You now have permanent admin privileges.');
+      setShowRobotDialog(false);
+      setIsRobotChecked(false);
+    } catch (error) {
+      console.error('Error granting admin access:', error);
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setRobotLoading(false);
+    }
   };
 
   const handleGenreClick = (genreId: string) => {
@@ -135,6 +213,14 @@ const Dashboard = () => {
   const filteredGenres = genres.filter(genre =>
     genre.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const resetAdminFlow = () => {
+    setAdminPassword('');
+    setAdminEmail('');
+    setAdminOtp('');
+    setIsRobotChecked(false);
+    setRobotLoading(false);
+  };
 
   if (loading) {
     return (
@@ -330,52 +416,152 @@ const Dashboard = () => {
         </footer>
       )}
 
-      {/* Admin Code Dialog */}
-      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
+      {/* Step 1: Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => { setShowPasswordDialog(open); if (!open) resetAdminFlow(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter Secret Code</DialogTitle>
+            <DialogTitle>Enter Admin Password</DialogTitle>
             <DialogDescription>
-              Please enter the secret code to continue.
+              Please enter the admin password to continue.
             </DialogDescription>
           </DialogHeader>
           <Input
             type="password"
-            placeholder="Enter secret code..."
-            value={adminCode}
-            onChange={(e) => setAdminCode(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
+            placeholder="Enter password..."
+            value={adminPassword}
+            onChange={(e) => setAdminPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCodeDialog(false)}>
+            <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCodeSubmit}>Submit</Button>
+            <Button onClick={handlePasswordSubmit}>Submit</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Admin PIN Dialog */}
-      <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+      {/* Step 2: Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={(open) => { setShowEmailDialog(open); if (!open) resetAdminFlow(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enter Admin PIN</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Verification
+            </DialogTitle>
             <DialogDescription>
-              Please enter your admin PIN to access the admin panel.
+              Enter your email address to receive a one-time password (OTP).
             </DialogDescription>
           </DialogHeader>
           <Input
-            type="password"
-            placeholder="Enter PIN..."
-            value={adminPin}
-            onChange={(e) => setAdminPin(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+            type="email"
+            placeholder="Enter your email..."
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !sendingOtp && handleEmailSubmit()}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPinDialog(false)}>
+            <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handlePinSubmit}>Submit</Button>
+            <Button onClick={handleEmailSubmit} disabled={sendingOtp}>
+              {sendingOtp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send OTP'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 3: OTP Dialog */}
+      <Dialog open={showOtpDialog} onOpenChange={(open) => { setShowOtpDialog(open); if (!open) resetAdminFlow(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter OTP</DialogTitle>
+            <DialogDescription>
+              Enter the 6-digit code sent to {adminEmail}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <InputOTP maxLength={6} value={adminOtp} onChange={setAdminOtp}>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOtpDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleOtpSubmit} disabled={verifyingOtp || adminOtp.length !== 6}>
+              {verifyingOtp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify OTP'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 4: Robot Verification Dialog */}
+      <Dialog open={showRobotDialog} onOpenChange={(open) => { setShowRobotDialog(open); if (!open) resetAdminFlow(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Final Verification</DialogTitle>
+            <DialogDescription>
+              Please confirm you are not a robot to complete the verification.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-6">
+            <div className="flex items-center space-x-3 p-4 border rounded-lg bg-muted/50">
+              <Checkbox
+                id="robot-check"
+                checked={isRobotChecked}
+                onCheckedChange={(checked) => setIsRobotChecked(checked === true)}
+                disabled={robotLoading}
+              />
+              <label
+                htmlFor="robot-check"
+                className="text-sm font-medium leading-none cursor-pointer"
+              >
+                Are You Robot ???
+              </label>
+            </div>
+          </div>
+          {robotLoading && (
+            <div className="flex flex-col items-center justify-center py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-muted-foreground">Verifying your identity...</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRobotDialog(false)} disabled={robotLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleRobotCheck} disabled={!isRobotChecked || robotLoading}>
+              {robotLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait...
+                </>
+              ) : (
+                'Confirm'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -43,10 +43,12 @@ const Dashboard = () => {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(true);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showTimePinDialog, setShowTimePinDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showOtpDialog, setShowOtpDialog] = useState(false);
   const [showRobotDialog, setShowRobotDialog] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
+  const [timePin, setTimePin] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminOtp, setAdminOtp] = useState('');
   const [isRobotChecked, setIsRobotChecked] = useState(false);
@@ -97,9 +99,32 @@ const Dashboard = () => {
 
       setShowPasswordDialog(false);
       setAdminPassword('');
-      setShowEmailDialog(true);
+      setShowTimePinDialog(true);
     } catch (error) {
       toast.error('Failed to verify password');
+    }
+  };
+
+  const getCurrentTimePin = () => {
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = now.getMinutes();
+    // Convert to 12-hour format
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const formattedMinutes = minutes.toString().padStart(2, '0');
+    return `${hours}:${formattedMinutes}`;
+  };
+
+  const handleTimePinSubmit = () => {
+    const currentPin = getCurrentTimePin();
+    if (timePin === currentPin) {
+      setShowTimePinDialog(false);
+      setTimePin('');
+      setShowEmailDialog(true);
+    } else {
+      toast.error('Incorrect time PIN');
+      setTimePin('');
     }
   };
 
@@ -216,6 +241,7 @@ const Dashboard = () => {
 
   const resetAdminFlow = () => {
     setAdminPassword('');
+    setTimePin('');
     setAdminEmail('');
     setAdminOtp('');
     setIsRobotChecked(false);
@@ -441,7 +467,32 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Step 2: Email Dialog */}
+      {/* Step 2: Time PIN Dialog */}
+      <Dialog open={showTimePinDialog} onOpenChange={(open) => { setShowTimePinDialog(open); if (!open) resetAdminFlow(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Time PIN</DialogTitle>
+            <DialogDescription>
+              Enter the current time in 12-hour format (e.g., 11:30)
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="text"
+            placeholder="HH:MM (e.g., 11:30)"
+            value={timePin}
+            onChange={(e) => setTimePin(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleTimePinSubmit()}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTimePinDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleTimePinSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 3: Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={(open) => { setShowEmailDialog(open); if (!open) resetAdminFlow(); }}>
         <DialogContent>
           <DialogHeader>
@@ -478,7 +529,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Step 3: OTP Dialog */}
+      {/* Step 4: OTP Dialog */}
       <Dialog open={showOtpDialog} onOpenChange={(open) => { setShowOtpDialog(open); if (!open) resetAdminFlow(); }}>
         <DialogContent>
           <DialogHeader>
@@ -517,7 +568,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Step 4: Robot Verification Dialog */}
+      {/* Step 5: Robot Verification Dialog */}
       <Dialog open={showRobotDialog} onOpenChange={(open) => { setShowRobotDialog(open); if (!open) resetAdminFlow(); }}>
         <DialogContent>
           <DialogHeader>

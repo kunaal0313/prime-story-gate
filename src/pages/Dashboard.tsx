@@ -65,6 +65,9 @@ const Dashboard = () => {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [storySearchQuery, setStorySearchQuery] = useState('');
+  const [storyResults, setStoryResults] = useState<StoryResult[]>([]);
+  const [searchingStories, setSearchingStories] = useState(false);
 
   useEffect(() => {
     fetchGenres();

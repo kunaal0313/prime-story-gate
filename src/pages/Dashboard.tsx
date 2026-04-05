@@ -270,7 +270,7 @@ const Dashboard = () => {
     }
   };
 
-  const filteredGenres = genres.filter(genre =>
+  
     genre.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -418,7 +418,7 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {filteredGenres.length === 0 ? (
+              {genres.length === 0 ? (
                 <div className="text-center py-16">
                   <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                   <p className="text-xl text-muted-foreground">
@@ -427,7 +427,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredGenres.map((genre) => (
+                  {genres.map((genre) => (
                     <Card
                       key={genre.id}
                       onClick={() => handleGenreClick(genre.id)}
@@ -513,7 +513,7 @@ const Dashboard = () => {
               </p>
             </div>
 
-            {filteredGenres.length === 0 ? (
+            {genres.length === 0 ? (
               <div className="text-center py-16">
                 <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">
@@ -522,7 +522,7 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGenres.map((genre) => (
+                {genres.map((genre) => (
                   <Card
                     key={genre.id}
                     onClick={() => handleGenreClick(genre.id)}

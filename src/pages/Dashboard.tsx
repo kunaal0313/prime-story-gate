@@ -64,7 +64,7 @@ const Dashboard = () => {
   const [robotLoading, setRobotLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
   const [storySearchQuery, setStorySearchQuery] = useState('');
   const [storyResults, setStoryResults] = useState<StoryResult[]>([]);
   const [searchingStories, setSearchingStories] = useState(false);
@@ -419,7 +419,7 @@ const Dashboard = () => {
                 <div className="text-center py-16">
                   <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                   <p className="text-xl text-muted-foreground">
-                    {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                    No genres available yet
                   </p>
                 </div>
               ) : (
@@ -514,7 +514,7 @@ const Dashboard = () => {
               <div className="text-center py-16">
                 <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">
-                  {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                  No genres available yet
                 </p>
               </div>
             ) : (

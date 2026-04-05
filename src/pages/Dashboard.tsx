@@ -270,9 +270,6 @@ const Dashboard = () => {
     }
   };
 
-  
-    genre.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const resetAdminFlow = () => {
     setAdminPassword('');

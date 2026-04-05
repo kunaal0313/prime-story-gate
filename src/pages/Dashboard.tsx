@@ -247,6 +247,29 @@ const Dashboard = () => {
     navigate(`/genre/${genreId}`);
   };
 
+  const handleStorySearch = async (query: string) => {
+    setStorySearchQuery(query);
+    if (query.trim().length < 2) {
+      setStoryResults([]);
+      return;
+    }
+    setSearchingStories(true);
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select('id, title, description, cover_image, genre_id, genres(name)')
+        .ilike('title', `%${query.trim()}%`)
+        .limit(10);
+
+      if (error) throw error;
+      setStoryResults((data as unknown as StoryResult[]) || []);
+    } catch (error) {
+      console.error('Error searching stories:', error);
+    } finally {
+      setSearchingStories(false);
+    }
+  };
+
   const filteredGenres = genres.filter(genre =>
     genre.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

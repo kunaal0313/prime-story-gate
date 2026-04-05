@@ -408,12 +408,6 @@ const Dashboard = () => {
                 )}
               </div>
 
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold mb-2 text-center">Explore Genres</h2>
-                <p className="text-muted-foreground text-center mb-6">
-                  Choose a genre to discover amazing stories
-                </p>
-              </div>
 
               {genres.length === 0 ? (
                 <div className="text-center py-16">
@@ -501,13 +495,6 @@ const Dashboard = () => {
                   )}
                 </div>
               )}
-            </div>
-
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold mb-2 text-center">Explore Genres</h2>
-              <p className="text-muted-foreground text-center mb-6">
-                Choose a genre to discover amazing stories
-              </p>
             </div>
 
             {genres.length === 0 ? (

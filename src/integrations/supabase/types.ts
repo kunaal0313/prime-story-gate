@@ -201,6 +201,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reading_history: {
+        Row: {
+          id: string
+          part_id: string
+          read_at: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          part_id: string
+          read_at?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          part_id?: string
+          read_at?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_history_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reading_history_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stories: {
         Row: {
           cover_image: string | null

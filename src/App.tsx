@@ -13,6 +13,7 @@ import GenrePage from "./pages/GenrePage";
 import StoryPage from "./pages/StoryPage";
 import PartReader from "./pages/PartReader";
 import AdminPanel from "./pages/AdminPanel";
+import ReadingHistory from "./pages/ReadingHistory";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/story/:storyId" element={<StoryPage />} />
               <Route path="/part/:partId" element={<PartReader />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/reading-history" element={<ReadingHistory />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

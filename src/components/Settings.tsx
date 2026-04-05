@@ -33,7 +33,7 @@ const Settings = () => {
   };
 
   const handleReadingHistory = () => {
-    toast.info('Reading history feature coming soon!');
+    navigate('/reading-history');
   };
 
   return (

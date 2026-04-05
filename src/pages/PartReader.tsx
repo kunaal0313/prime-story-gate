@@ -39,6 +39,16 @@ const PartReader = () => {
   useEffect(() => {
     if (part && user && username) {
       trackActivity('read_part', `Read part: ${part.title}`, `/part/${partId}`);
+      // Log to reading history
+      supabase
+        .from('reading_history')
+        .upsert(
+          { user_id: user.id, part_id: part.id, story_id: part.story_id, read_at: new Date().toISOString() },
+          { onConflict: 'user_id,part_id' }
+        )
+        .then(({ error }) => {
+          if (error) console.error('Failed to log reading history:', error);
+        });
     }
   }, [part, user, username]);
 

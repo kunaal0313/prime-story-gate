@@ -35,6 +35,15 @@ interface Genre {
   description: string | null;
 }
 
+interface StoryResult {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_image: string | null;
+  genre_id: string;
+  genres?: { name: string } | null;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { checkAdminStatus, user, isAdmin, username } = useAuth();

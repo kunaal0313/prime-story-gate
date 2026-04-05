@@ -465,12 +465,68 @@ const Dashboard = () => {
         ) : (
           <>
             <div className="mb-8">
+              <h2 className="text-3xl font-bold mb-2 text-center">Search Stories</h2>
+              <p className="text-muted-foreground text-center mb-4">
+                Find stories by title across all genres
+              </p>
+              <div className="max-w-md mx-auto mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search stories..."
+                    value={storySearchQuery}
+                    onChange={(e) => handleStorySearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              {storySearchQuery.trim().length >= 2 && (
+                <div className="max-w-2xl mx-auto mb-8">
+                  {searchingStories ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-muted-foreground">Searching...</span>
+                    </div>
+                  ) : storyResults.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">No stories found matching "{storySearchQuery}"</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {storyResults.map((story) => (
+                        <Card
+                          key={story.id}
+                          onClick={() => navigate(`/story/${story.id}`)}
+                          className="p-4 cursor-pointer transition-all hover:shadow-card hover:scale-[1.02] bg-gradient-card"
+                        >
+                          <div className="flex items-center gap-3">
+                            {story.cover_image && (
+                              <img src={story.cover_image} alt={story.title} className="h-12 w-12 rounded object-cover" />
+                            )}
+                            <div>
+                              <h4 className="font-semibold">{story.title}</h4>
+                              <p className="text-xs text-muted-foreground">
+                                {story.genres?.name || 'Unknown genre'}
+                              </p>
+                              {story.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-1">{story.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="mb-8">
               <h2 className="text-3xl font-bold mb-2 text-center">Explore Genres</h2>
               <p className="text-muted-foreground text-center mb-6">
                 Choose a genre to discover amazing stories
               </p>
               
-              {/* Search Bar */}
+              {/* Genre Search Bar */}
               <div className="max-w-md mx-auto mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

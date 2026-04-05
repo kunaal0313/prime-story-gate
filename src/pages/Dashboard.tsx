@@ -64,7 +64,7 @@ const Dashboard = () => {
   const [robotLoading, setRobotLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
   const [storySearchQuery, setStorySearchQuery] = useState('');
   const [storyResults, setStoryResults] = useState<StoryResult[]>([]);
   const [searchingStories, setSearchingStories] = useState(false);
@@ -270,9 +270,6 @@ const Dashboard = () => {
     }
   };
 
-  const filteredGenres = genres.filter(genre =>
-    genre.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const resetAdminFlow = () => {
     setAdminPassword('');
@@ -416,32 +413,18 @@ const Dashboard = () => {
                 <p className="text-muted-foreground text-center mb-6">
                   Choose a genre to discover amazing stories
                 </p>
-                
-                {/* Genre Search Bar */}
-                <div className="max-w-md mx-auto mb-6">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Search genres..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {filteredGenres.length === 0 ? (
+              {genres.length === 0 ? (
                 <div className="text-center py-16">
                   <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                   <p className="text-xl text-muted-foreground">
-                    {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                    No genres available yet
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredGenres.map((genre) => (
+                  {genres.map((genre) => (
                     <Card
                       key={genre.id}
                       onClick={() => handleGenreClick(genre.id)}
@@ -525,32 +508,18 @@ const Dashboard = () => {
               <p className="text-muted-foreground text-center mb-6">
                 Choose a genre to discover amazing stories
               </p>
-              
-              {/* Genre Search Bar */}
-              <div className="max-w-md mx-auto mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search genres..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
             </div>
 
-            {filteredGenres.length === 0 ? (
+            {genres.length === 0 ? (
               <div className="text-center py-16">
                 <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <p className="text-xl text-muted-foreground">
-                  {searchQuery ? 'No genres found matching your search' : 'No genres available yet'}
+                  No genres available yet
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGenres.map((genre) => (
+                {genres.map((genre) => (
                   <Card
                     key={genre.id}
                     onClick={() => handleGenreClick(genre.id)}

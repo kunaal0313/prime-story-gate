@@ -7,6 +7,7 @@ import logo from '@/assets/logo.jpg';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
+import SocialAuthButtons from '@/components/SocialAuthButtons';
 
 const Login = () => {
   const navigate = useNavigate();

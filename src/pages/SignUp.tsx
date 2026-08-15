@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import SocialAuthButtons from '@/components/SocialAuthButtons';
 
 const SignUp = () => {
   const navigate = useNavigate();

@@ -121,10 +121,12 @@ const Login = () => {
             )}
           </Button>
 
+          <SocialAuthButtons disabled={submitting} />
+
           <Button
             type="button"
             onClick={handleSkip}
-            variant="outline"
+            variant="ghost"
             size="lg"
             className="w-full"
             disabled={submitting}

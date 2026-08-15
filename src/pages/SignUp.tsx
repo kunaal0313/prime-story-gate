@@ -37,6 +37,14 @@ const SignUp = () => {
       return;
     }
 
+    // Require a real domain with a TLD (blocks things like testing@testing)
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
+      toast.error('Please enter a valid email address with a real domain');
+      return;
+    }
+
+
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;

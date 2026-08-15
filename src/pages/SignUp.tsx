@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import SocialAuthButtons from '@/components/SocialAuthButtons';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -35,6 +36,14 @@ const SignUp = () => {
       toast.error('Please fill in all fields');
       return;
     }
+
+    // Require a real domain with a TLD (blocks things like testing@testing)
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
+      toast.error('Please enter a valid email address with a real domain');
+      return;
+    }
+
+
 
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
@@ -196,6 +205,8 @@ const SignUp = () => {
               'Create Account'
             )}
           </Button>
+
+          <SocialAuthButtons disabled={submitting} />
 
           <div className="text-center pt-4">
             <p className="text-muted-foreground">

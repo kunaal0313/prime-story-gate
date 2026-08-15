@@ -148,14 +148,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, username: string, dateOfBirth?: Date) => {
-    // Check if username already exists
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
+    // Check if username already exists (safe boolean-only check)
+    const { data: usernameTaken } = await supabase.rpc('username_exists', {
+      _username: username,
+    });
 
-    if (existingProfile) {
+    if (usernameTaken) {
       return { error: { message: 'Username already taken' } };
     }
 

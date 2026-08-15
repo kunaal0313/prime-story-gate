@@ -197,6 +197,8 @@ const SignUp = () => {
             )}
           </Button>
 
+          <SocialAuthButtons disabled={submitting} />
+
           <div className="text-center pt-4">
             <p className="text-muted-foreground">
               Already have an account?{' '}
